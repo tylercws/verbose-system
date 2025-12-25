@@ -54,7 +54,7 @@
   }
 
   * {
-    @apply border-border;
+    @apply border-border-glass;
   }
   
   body {
