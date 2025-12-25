@@ -99,7 +99,7 @@ const FileUpload: React.FC<FileUploadProps> = ({
             : 'border-border-glass hover:border-primary-300'
         )}
       >
-        <input {...getInputProps()} />
+        <input {...(getInputProps() as React.InputHTMLAttributes<HTMLInputElement>)} />
         
         <div className="flex flex-col items-center justify-center text-center min-h-[200px]">
           <motion.div
