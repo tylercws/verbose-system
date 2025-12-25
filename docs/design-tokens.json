@@ -1,0 +1,93 @@
+{
+  "color": {
+    "primary": {
+      "500": { "value": "#00F0FF" },
+      "glow": { "value": "rgba(0, 240, 255, 0.4)" }
+    },
+    "secondary": {
+      "500": { "value": "#FF0099" }
+    },
+    "bg": {
+      "depth": { "value": "#050510" }
+    },
+    "surface": {
+      "glass": { "value": "rgba(20, 20, 25, 0.6)" },
+      "glassHover": { "value": "rgba(30, 30, 35, 0.7)" },
+      "overlay": { "value": "rgba(0, 0, 0, 0.4)" }
+    },
+    "border": {
+      "glass": { "value": "rgba(255, 255, 255, 0.1)" },
+      "highlight": { "value": "rgba(255, 255, 255, 0.2)" }
+    },
+    "text": {
+      "primary": { "value": "#FFFFFF" },
+      "secondary": { "value": "rgba(255, 255, 255, 0.6)" },
+      "muted": { "value": "rgba(255, 255, 255, 0.4)" }
+    }
+  },
+  "typography": {
+    "family": {
+      "sans": { "value": "'Inter', 'Space Grotesk', system-ui, sans-serif" },
+      "mono": { "value": "'JetBrains Mono', monospace" }
+    },
+    "size": {
+      "xs": { "value": "12px" },
+      "sm": { "value": "14px" },
+      "base": { "value": "16px" },
+      "lg": { "value": "20px" },
+      "xl": { "value": "24px" },
+      "2xl": { "value": "32px" }
+    },
+    "weight": {
+      "regular": { "value": "400" },
+      "medium": { "value": "500" },
+      "semibold": { "value": "600" },
+      "bold": { "value": "700" }
+    },
+    "lineHeight": {
+      "tight": { "value": "1.2" },
+      "normal": { "value": "1.5" },
+      "relaxed": { "value": "1.6" }
+    }
+  },
+  "spacing": {
+    "1": { "value": "4px" },
+    "2": { "value": "8px" },
+    "3": { "value": "12px" },
+    "4": { "value": "16px" },
+    "6": { "value": "24px" },
+    "8": { "value": "32px" },
+    "12": { "value": "48px" },
+    "16": { "value": "64px" }
+  },
+  "borderRadius": {
+    "sm": { "value": "8px" },
+    "md": { "value": "16px" },
+    "lg": { "value": "24px" },
+    "full": { "value": "9999px" }
+  },
+  "effect": {
+    "blur": {
+      "sm": { "value": "blur(8px)" },
+      "md": { "value": "blur(16px)" },
+      "lg": { "value": "blur(32px)" }
+    },
+    "shadow": {
+      "sm": { "value": "0 4px 16px rgba(0,0,0,0.2)" },
+      "lg": { "value": "0 8px 32px rgba(0,0,0,0.3)" },
+      "inner": { "value": "inset 1px 1px 0 0 rgba(255, 255, 255, 0.2)" },
+      "neon": { "value": "0 0 10px rgba(0, 240, 255, 0.5), 0 0 20px rgba(0, 240, 255, 0.3)" }
+    }
+  },
+  "animation": {
+    "spring": {
+      "stiffness": { "value": "400" },
+      "damping": { "value": "30" }
+    },
+    "duration": {
+      "fast": { "value": "200ms" },
+      "normal": { "value": "300ms" },
+      "slow": { "value": "500ms" }
+    }
+  }
+}
