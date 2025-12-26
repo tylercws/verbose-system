@@ -483,6 +483,9 @@ export class DitheringEngine {
     const height = imageData.height;
     const intensityFactor = intensity / 100;
 
+    // Preserve original values for brightness checks
+    const sourceData = new Uint8ClampedArray(data);
+
     // Clear to white first
     for (let i = 0; i < data.length; i += 4) {
       data[i] = data[i + 1] = data[i + 2] = 255;
@@ -492,7 +495,11 @@ export class DitheringEngine {
     for (let y = 0; y < height; y += density) {
       for (let x = 0; x < width; x += density) {
         const i = (y * width + x) * 4;
-        const gray = Math.round(0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2]);
+        const gray = Math.round(
+          0.299 * sourceData[i] +
+          0.587 * sourceData[i + 1] +
+          0.114 * sourceData[i + 2]
+        );
         
         // Place black dots where image is dark
         if (gray < 128) {

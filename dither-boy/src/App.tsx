@@ -59,6 +59,16 @@ const DitherBoy: React.FC = () => {
     }));
   };
 
+  const handleClear = useCallback(() => {
+    if (isProcessing) return;
+
+    setSelectedAlgorithm(null);
+    setAlgorithmParameters({});
+    setUploadedFiles([]);
+    setCurrentImage('');
+    setProcessedImage('');
+  }, [isProcessing]);
+
   const processImage = useCallback(async () => {
     if (!selectedAlgorithm || !currentImage) return;
 
@@ -102,6 +112,22 @@ const DitherBoy: React.FC = () => {
       return () => clearTimeout(timeoutId);
     }
   }, [algorithmParameters, processImage, selectedAlgorithm, currentImage]);
+
+  const handleProcessClick = useCallback(() => {
+    if (isProcessing) return;
+    processImage();
+  }, [isProcessing, processImage]);
+
+  const handleExportResult = useCallback(() => {
+    if (!processedImage || isProcessing) return;
+
+    const link = document.createElement('a');
+    link.href = processedImage;
+    link.download = 'dither-boy-output.png';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }, [processedImage, isProcessing]);
 
   const filteredAlgorithms = useMemo(() => {
     let algorithms = DITHERING_ALGORITHMS;
@@ -179,6 +205,9 @@ const DitherBoy: React.FC = () => {
               <LiquidButton
                 variant="secondary"
                 size="sm"
+                onClick={handleProcessClick}
+                disabled={!selectedAlgorithm || !currentImage || isProcessing}
+                loading={isProcessing}
                 icon={
                   <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                     <path
@@ -195,6 +224,8 @@ const DitherBoy: React.FC = () => {
               <LiquidButton
                 variant="ghost"
                 size="sm"
+                onClick={handleClear}
+                disabled={isProcessing}
                 icon={
                   <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                     <path
@@ -414,11 +445,11 @@ const DitherBoy: React.FC = () => {
               </div>
 
               <div className="p-4 border-t border-border-glass space-y-3">
-                <LiquidButton
-                  variant="primary"
-                  size="md"
-                  onClick={processImage}
-                  disabled={!selectedAlgorithm || !currentImage || isProcessing}
+              <LiquidButton
+                variant="primary"
+                size="md"
+                onClick={processImage}
+                disabled={!selectedAlgorithm || !currentImage || isProcessing}
                   loading={isProcessing}
                   icon={
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -435,13 +466,14 @@ const DitherBoy: React.FC = () => {
                   {isProcessing ? 'Processing...' : 'Process Image'}
                 </LiquidButton>
 
-                <LiquidButton
-                  variant="secondary"
-                  size="md"
-                  disabled={!processedImage}
-                  icon={
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path
+              <LiquidButton
+                variant="secondary"
+                size="md"
+                onClick={handleExportResult}
+                disabled={!processedImage || isProcessing}
+                icon={
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path
                         strokeLinecap="round"
                         strokeLinejoin="round"
                         strokeWidth={2}
