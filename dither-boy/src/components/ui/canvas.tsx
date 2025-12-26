@@ -35,6 +35,57 @@ const Canvas: React.FC<CanvasProps> = ({
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  const [lastDrawRect, setLastDrawRect] = useState<{ x: number; y: number; width: number; height: number } | null>(null);
+
+  const originalImageRef = useRef<HTMLImageElement | null>(null);
+  const processedImageRef = useRef<HTMLImageElement | null>(null);
+
+  const computeDrawRect = (img: HTMLImageElement, canvas: HTMLCanvasElement) => {
+    const scaleX = canvas.width / img.width;
+    const scaleY = canvas.height / img.height;
+    const scale = Math.min(scaleX, scaleY);
+    const scaledWidth = img.width * scale;
+    const scaledHeight = img.height * scale;
+    const x = (canvas.width - scaledWidth) / 2;
+    const y = (canvas.height - scaledHeight) / 2;
+    return { x, y, width: scaledWidth, height: scaledHeight };
+  };
+
+  const renderCanvas = useCallback(() => {
+    const canvas = canvasRef.current;
+    const ctx = canvas?.getContext('2d');
+    if (!canvas || !ctx || !originalImageRef.current || !lastDrawRect) return;
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    ctx.save();
+    ctx.scale(zoom, zoom);
+    ctx.translate(pan.x, pan.y);
+
+    ctx.drawImage(
+      originalImageRef.current,
+      lastDrawRect.x,
+      lastDrawRect.y,
+      lastDrawRect.width,
+      lastDrawRect.height
+    );
+
+    if (processedImageRef.current) {
+      ctx.drawImage(
+        processedImageRef.current,
+        lastDrawRect.x,
+        lastDrawRect.y,
+        lastDrawRect.width,
+        lastDrawRect.height
+      );
+    }
+
+    ctx.restore();
+
+    if (originalImageRef.current) {
+      onImageProcess?.(canvas, originalImageRef.current);
+    }
+  }, [lastDrawRect, pan, zoom, onImageProcess]);
 
   // Draw image on canvas
   const drawImage = useCallback(async (imageSrc: string, canvas: HTMLCanvasElement) => {
@@ -58,11 +109,12 @@ const Canvas: React.FC<CanvasProps> = ({
         const scaledHeight = img.height * scale;
         const x = (canvas.width - scaledWidth) / 2;
         const y = (canvas.height - scaledHeight) / 2;
+        const rect = { x, y, width: scaledWidth, height: scaledHeight };
+        setLastDrawRect(rect);
+        originalImageRef.current = img;
+        processedImageRef.current = processedImageSrc ? processedImageRef.current : null;
+        renderCanvas();
 
-        // Clear canvas and draw image
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        ctx.drawImage(img, x, y, scaledWidth, scaledHeight);
-        
         onImageLoad?.(img);
         resolve();
       };
@@ -70,7 +122,7 @@ const Canvas: React.FC<CanvasProps> = ({
       img.onerror = reject;
       img.src = imageSrc;
     });
-  }, [onImageLoad]);
+  }, [onImageLoad, processedImageSrc, renderCanvas]);
 
   // Handle image loading
   useEffect(() => {
@@ -79,7 +131,8 @@ const Canvas: React.FC<CanvasProps> = ({
 
     canvas.width = width;
     canvas.height = height;
-    
+    processedImageRef.current = null;
+
     drawImage(imageSrc, canvas).then(() => {
       onCanvasReady?.(canvas);
     }).catch(console.error);
@@ -88,29 +141,26 @@ const Canvas: React.FC<CanvasProps> = ({
   // Handle processed image overlay
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (!canvas || !processedImageSrc) return;
+    if (!canvas || !processedImageSrc) {
+      processedImageRef.current = null;
+      renderCanvas();
+      return;
+    }
 
     const img = new Image();
     img.crossOrigin = 'anonymous';
     
     img.onload = () => {
-      const ctx = canvas.getContext('2d');
-      if (!ctx) return;
-
-      // Apply zoom and pan transformations
-      ctx.save();
-      ctx.scale(zoom, zoom);
-      ctx.translate(pan.x, pan.y);
-
-      // Draw processed image with blending
-      ctx.globalCompositeOperation = 'source-over';
-      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-      
-      ctx.restore();
+      processedImageRef.current = img;
+      renderCanvas();
     };
     
     img.src = processedImageSrc;
-  }, [processedImageSrc, zoom, pan]);
+  }, [processedImageSrc, renderCanvas]);
+
+  useEffect(() => {
+    renderCanvas();
+  }, [zoom, pan, renderCanvas]);
 
   // Pan handling
   const handleMouseDown = (e: React.MouseEvent) => {
