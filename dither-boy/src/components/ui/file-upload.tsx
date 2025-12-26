@@ -10,6 +10,10 @@ export interface FileUploadProps {
   maxFiles?: number;
   maxSize?: number; // in bytes
   className?: string;
+  /**
+   * Increment this value to clear any uploaded files and revoke previews from outside the component
+   */
+  resetToken?: number;
   children?: React.ReactNode;
 }
 
@@ -28,10 +32,20 @@ const FileUpload: React.FC<FileUploadProps> = ({
   maxFiles = 10,
   maxSize = 100 * 1024 * 1024, // 100MB
   className,
+  resetToken = 0,
   children
 }) => {
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
   const [isDragActive, setIsDragActive] = useState(false);
+  const filesRef = React.useRef<UploadedFile[]>([]);
+
+  const revokePreviews = (files: UploadedFile[]) => {
+    files.forEach((file) => {
+      if (file.preview) {
+        URL.revokeObjectURL(file.preview);
+      }
+    });
+  };
 
   const onDrop = useCallback((acceptedFiles: File[], rejectedFiles: any[]) => {
     const newFiles: UploadedFile[] = acceptedFiles.map(file => ({
@@ -40,15 +54,12 @@ const FileUpload: React.FC<FileUploadProps> = ({
       preview: file.type.startsWith('image/') ? URL.createObjectURL(file) : undefined
     }));
 
-    setUploadedFiles(prev => [...prev, ...newFiles]);
+    setUploadedFiles(prev => {
+      const next = [...prev, ...newFiles];
+      filesRef.current = next;
+      return next;
+    });
     onFilesAccepted(acceptedFiles);
-
-    // Clean up object URLs when component unmounts
-    return () => {
-      newFiles.forEach(f => {
-        if (f.preview) URL.revokeObjectURL(f.preview);
-      });
-    };
   }, [onFilesAccepted]);
 
   const { getRootProps, getInputProps, isDragActive: dropzoneActive } = useDropzone({
@@ -70,9 +81,27 @@ const FileUpload: React.FC<FileUploadProps> = ({
       if (fileToRemove?.preview) {
         URL.revokeObjectURL(fileToRemove.preview);
       }
-      return prev.filter(f => f.id !== id);
+      const next = prev.filter(f => f.id !== id);
+      filesRef.current = next;
+      return next;
     });
   };
+
+  // Clear uploaded files when resetToken changes or component unmounts
+  React.useEffect(() => {
+    setUploadedFiles(prev => {
+      revokePreviews(prev);
+      filesRef.current = [];
+      return [];
+    });
+  }, [resetToken]);
+
+  React.useEffect(() => {
+    return () => {
+      revokePreviews(filesRef.current);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const containerClasses = cn(
     'relative',

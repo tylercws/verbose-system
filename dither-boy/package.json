@@ -10,7 +10,9 @@
     "lint": "pnpm install --prefer-offline && eslint .",
     "preview": "pnpm install --prefer-offline && vite preview",
     "install-deps": "pnpm install --prefer-offline",
-    "clean": "rm -rf node_modules .pnpm-store pnpm-lock.yaml && pnpm store prune"
+    "clean": "rm -rf node_modules .pnpm-store pnpm-lock.yaml && pnpm store prune",
+    "test": "pnpm run test:build && node --test build-tests/tests/**/*.js",
+    "test:build": "tsc -p tsconfig.test.json"
   },
   "dependencies": {
     "@ffmpeg/ffmpeg": "^0.12.15",
