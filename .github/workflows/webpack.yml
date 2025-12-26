@@ -26,5 +26,5 @@ jobs:
       run: |
         npm install
         npx webpack
-        working-directory: ../dither-boy
+        working-directory: /home/runner/work/verbose-system/verbose-system/dither-boy
 
