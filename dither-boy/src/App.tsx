@@ -20,6 +20,7 @@ const DitherBoy: React.FC = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [searchQuery, setSearchQuery] = useState('');
+  const [uploadResetToken, setUploadResetToken] = useState(0);
 
   const ditheringEngine = useRef(new DitheringEngine());
 
@@ -67,6 +68,7 @@ const DitherBoy: React.FC = () => {
     setUploadedFiles([]);
     setCurrentImage('');
     setProcessedImage('');
+    setUploadResetToken((token) => token + 1);
   }, [isProcessing]);
 
   const processImage = useCallback(async () => {
@@ -319,7 +321,11 @@ const DitherBoy: React.FC = () => {
                 showControls={true}
               />
             ) : (
-              <FileUpload onFilesAccepted={handleFilesAccepted} className="h-full">
+              <FileUpload
+                onFilesAccepted={handleFilesAccepted}
+                className="h-full"
+                resetToken={uploadResetToken}
+              >
                 <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                   <motion.div
                     animate={{ scale: [1, 1.05, 1] }}

@@ -2,6 +2,7 @@ import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { GlassPanel } from './glass-panel';
 import { cn } from '@/lib/utils';
+import { computeDrawRect } from '@/lib/canvas-helpers';
 
 export interface CanvasProps {
   imageSrc?: string;
@@ -35,26 +36,16 @@ const Canvas: React.FC<CanvasProps> = ({
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
-  const [lastDrawRect, setLastDrawRect] = useState<{ x: number; y: number; width: number; height: number } | null>(null);
+  const [canvasSize, setCanvasSize] = useState<{ width: number; height: number }>({ width, height });
+  const drawRectRef = useRef<{ x: number; y: number; width: number; height: number } | null>(null);
 
   const originalImageRef = useRef<HTMLImageElement | null>(null);
   const processedImageRef = useRef<HTMLImageElement | null>(null);
 
-  const computeDrawRect = (img: HTMLImageElement, canvas: HTMLCanvasElement) => {
-    const scaleX = canvas.width / img.width;
-    const scaleY = canvas.height / img.height;
-    const scale = Math.min(scaleX, scaleY);
-    const scaledWidth = img.width * scale;
-    const scaledHeight = img.height * scale;
-    const x = (canvas.width - scaledWidth) / 2;
-    const y = (canvas.height - scaledHeight) / 2;
-    return { x, y, width: scaledWidth, height: scaledHeight };
-  };
-
   const renderCanvas = useCallback(() => {
     const canvas = canvasRef.current;
     const ctx = canvas?.getContext('2d');
-    if (!canvas || !ctx || !originalImageRef.current || !lastDrawRect) return;
+    if (!canvas || !ctx || !originalImageRef.current || !drawRectRef.current) return;
 
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
@@ -64,19 +55,19 @@ const Canvas: React.FC<CanvasProps> = ({
 
     ctx.drawImage(
       originalImageRef.current,
-      lastDrawRect.x,
-      lastDrawRect.y,
-      lastDrawRect.width,
-      lastDrawRect.height
+      drawRectRef.current.x,
+      drawRectRef.current.y,
+      drawRectRef.current.width,
+      drawRectRef.current.height
     );
 
     if (processedImageRef.current) {
       ctx.drawImage(
         processedImageRef.current,
-        lastDrawRect.x,
-        lastDrawRect.y,
-        lastDrawRect.width,
-        lastDrawRect.height
+        drawRectRef.current.x,
+        drawRectRef.current.y,
+        drawRectRef.current.width,
+        drawRectRef.current.height
       );
     }
 
@@ -85,7 +76,7 @@ const Canvas: React.FC<CanvasProps> = ({
     if (originalImageRef.current) {
       onImageProcess?.(canvas, originalImageRef.current);
     }
-  }, [lastDrawRect, pan, zoom, onImageProcess]);
+  }, [pan, zoom, onImageProcess]);
 
   // Draw image on canvas
   const drawImage = useCallback(async (imageSrc: string, canvas: HTMLCanvasElement) => {
@@ -100,17 +91,11 @@ const Canvas: React.FC<CanvasProps> = ({
           return;
         }
 
-        // Calculate scaling to fit canvas while maintaining aspect ratio
-        const scaleX = canvas.width / img.width;
-        const scaleY = canvas.height / img.height;
-        const scale = Math.min(scaleX, scaleY);
-        
-        const scaledWidth = img.width * scale;
-        const scaledHeight = img.height * scale;
-        const x = (canvas.width - scaledWidth) / 2;
-        const y = (canvas.height - scaledHeight) / 2;
-        const rect = { x, y, width: scaledWidth, height: scaledHeight };
-        setLastDrawRect(rect);
+        const rect = computeDrawRect(
+          { width: img.width, height: img.height },
+          { width: canvas.width, height: canvas.height }
+        );
+        drawRectRef.current = rect;
         originalImageRef.current = img;
         processedImageRef.current = processedImageSrc ? processedImageRef.current : null;
         renderCanvas();
@@ -129,14 +114,14 @@ const Canvas: React.FC<CanvasProps> = ({
     const canvas = canvasRef.current;
     if (!canvas || !imageSrc) return;
 
-    canvas.width = width;
-    canvas.height = height;
+    canvas.width = canvasSize.width;
+    canvas.height = canvasSize.height;
     processedImageRef.current = null;
 
     drawImage(imageSrc, canvas).then(() => {
       onCanvasReady?.(canvas);
     }).catch(console.error);
-  }, [imageSrc, width, height, drawImage, onCanvasReady]);
+  }, [imageSrc, canvasSize.width, canvasSize.height, drawImage, onCanvasReady]);
 
   // Handle processed image overlay
   useEffect(() => {
@@ -161,6 +146,40 @@ const Canvas: React.FC<CanvasProps> = ({
   useEffect(() => {
     renderCanvas();
   }, [zoom, pan, renderCanvas]);
+
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const updateSize = () => {
+      const rect = container.getBoundingClientRect();
+      setCanvasSize({
+        width: rect.width || width,
+        height: rect.height || height
+      });
+    };
+
+    updateSize();
+
+    const observer = new ResizeObserver(updateSize);
+    observer.observe(container);
+
+    return () => observer.disconnect();
+  }, [width, height]);
+
+  // Recompute draw rect on size changes when an image is present
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas || !originalImageRef.current) return;
+
+    canvas.width = canvasSize.width;
+    canvas.height = canvasSize.height;
+    drawRectRef.current = computeDrawRect(
+      { width: originalImageRef.current.width, height: originalImageRef.current.height },
+      { width: canvas.width, height: canvas.height }
+    );
+    renderCanvas();
+  }, [canvasSize.width, canvasSize.height, renderCanvas]);
 
   // Pan handling
   const handleMouseDown = (e: React.MouseEvent) => {
@@ -208,7 +227,8 @@ const Canvas: React.FC<CanvasProps> = ({
       ref={containerRef}
       variant="default" 
       padding="none" 
-      className="relative overflow-hidden"
+      className="relative overflow-hidden min-h-[400px]"
+      style={{ minHeight: height }}
     >
       {/* Canvas Container */}
       <div 
